@@ -25,7 +25,11 @@
 IrqType IrqManager::irqType = PAIRING;
 
 // globals' initialization
+#ifdef WIFI_ENABLED
 byte g_ConfigFlags = ~FLAG_RAW & ~FLAG_DEBUG & FLAG_POLLING;
+#else
+byte g_ConfigFlags = ~FLAG_RAW & ~FLAG_DEBUG & ~FLAG_POLLING;
+#endif // WIFI_ENABLED
 SerialHelper* g_serial;
 Pairing* g_pairingRF;
 E2bp* g_bp;
@@ -79,26 +83,28 @@ void setup() {
 
     // Setting up configured wifi or AP mode
     // If compilation options are present, override any existing configuration
-    #ifdef WIFI_SSID
-        String ssid = WIFI_SSID;
-        String psk = "";
-        #ifdef WIFI_PASSWORD
-        psk = WIFI_PASSWORD;
-        #endif // WIFI_PASSWORD
-        LOG.print("WIFI_SSID is set, forcing this configuration. SSID=");
-        LOG.println(WIFI_SSID);
-        setupWifi(ssid, psk);
-    #else
-        setupWifi(); // Setup existing configuration of set AP mode for initial config
-    #endif // WIFI_SSID
+    #ifdef WIFI_ENABLED
+        #ifdef WIFI_SSID
+            String ssid = WIFI_SSID;
+            String psk = "";
+            #ifdef WIFI_PASSWORD
+            psk = WIFI_PASSWORD;
+            #endif // WIFI_PASSWORD
+            LOG.print("WIFI_SSID is set, forcing this configuration. SSID=");
+            LOG.println(WIFI_SSID);
+            setupWifi(ssid, psk);
+        #else
+            setupWifi(); // Setup existing configuration of set AP mode for initial config
+        #endif // WIFI_SSID
 
-    // Starting webserver
-    webserver.begin();
+        // Starting webserver
+        webserver.begin();
+    #endif // WIFI_ENABLED
 
     #if defined(MQTT_ENABLED)
     g_mqtt = new MqttHass(espClient);
     g_mqtt->setCallback(mqttCallback);
-    #endif
+    #endif // MQTT_ENABLED
 
     // OTA
     ArduinoOTA.onStart([]() {
